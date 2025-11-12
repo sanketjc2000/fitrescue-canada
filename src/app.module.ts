@@ -3,12 +3,14 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { createClient } from '@supabase/supabase-js';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { AuthModule } from './auth/auth.module';
+import { SupabaseService } from './supabase/supabase.service';
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true })],
+  imports: [ConfigModule.forRoot({ isGlobal: true }), AuthModule], // Make ConfigModule global env can be accessed anywhere
   providers: [
     AppService,
-    {
+    { 
       provide: 'SUPABASE_CLIENT',
       useFactory: (configService: ConfigService) => {
         const supabaseUrl=configService.get<string>('SUPABASE_URL')||'';
@@ -22,8 +24,9 @@ import { AppService } from './app.service';
       },
       inject: [ConfigService],
     },
+    SupabaseService,
   ],
-  exports: ['SUPABASE_CLIENT'],
+  exports: ['SUPABASE_CLIENT',SupabaseService],
   controllers: [AppController],
 })
 export class AppModule { }
