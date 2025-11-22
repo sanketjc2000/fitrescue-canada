@@ -12,7 +12,12 @@ export class AuthService {
         });
 
         if (error) throw new UnauthorizedException(error.message);
-        return { message: 'Signup successful', user: data.user, };
+        if (!data.user) throw new UnauthorizedException('Signup failed. Try again later.');
+
+        return {
+            message: 'Signup successful',
+            user: data.user,
+        };
     }
 
     async loginWithEmail(email: string, password: string) {
@@ -21,8 +26,30 @@ export class AuthService {
             password,
         });
 
+        // Check if the login itself failed (e.g., wrong password)
+        if (error||!data.session) {
+            throw new UnauthorizedException(error?.message||'Login failed. Invalid credentials.');
+        }
+
+
+        return {
+            message: 'Login successful',
+            session: data.session,
+            user: data.user,
+        };
+    }
+
+    async sendPasswordReset(email: string) {
+        const { data, error }=await this.supabaseService.client.auth.resetPasswordForEmail(email, {
+            redirectTo: process.env.PASSWORD_RESET_REDIRECT_URL,
+        });
+
         if (error) throw new UnauthorizedException(error.message);
-        return { message: 'Login successful', user: data.user, token: data.session?.access_token };
+
+        return {
+            message: 'Password reset email sent',
+            data,
+        };
     }
 
     async loginWithGoogle() {
@@ -34,7 +61,7 @@ export class AuthService {
         });
 
         if (error) throw new UnauthorizedException(error.message);
-        return { url: data.url }; // redirect user to this URL in frontend
+        return { url: data.url }; // Redirect this from frontend
     }
 
     async loginWithApple() {

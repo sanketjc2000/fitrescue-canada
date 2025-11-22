@@ -15,6 +15,11 @@ export class AuthController {
     return this.authService.loginWithEmail(email, password);
   }
 
+  @Post('password-reset')
+  async passwordReset(@Body('email') email: string) {
+    return this.authService.sendPasswordReset(email);
+  }
+
   @Get('google')
   async googleLogin() {
     return this.authService.loginWithGoogle();
