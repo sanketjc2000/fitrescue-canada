@@ -1,9 +1,13 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
+import { UsersService } from '../users/users.service';
 
 @Injectable()
 export class AuthService {
-    constructor(private readonly supabaseService: SupabaseService) { }
+    constructor(
+        private readonly supabaseService: SupabaseService,
+        private readonly usersService: UsersService,
+    ) { }
 
     async signupWithEmail(email: string, password: string) {
         const { data, error }=await this.supabaseService.client.auth.signUp({
@@ -13,6 +17,19 @@ export class AuthService {
 
         if (error) throw new UnauthorizedException(error.message);
         if (!data.user) throw new UnauthorizedException('Signup failed. Try again later.');
+
+        // Create AppUser record
+        try {
+            await this.usersService.create({
+                email: data.user.email,
+                supabaseUserId: data.user.id,
+            });
+        } catch (error) {
+            if (error.code==='23505') {
+                throw new ConflictException('User with this email already exists');
+            }
+            throw error;
+        }
 
         return {
             message: 'Signup successful',

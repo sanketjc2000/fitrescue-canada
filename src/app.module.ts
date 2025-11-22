@@ -1,16 +1,35 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { createClient } from '@supabase/supabase-js';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
-import { SupabaseService } from './supabase/supabase.service';
+import { UsersModule } from './users/users.module';
+import { UserProfilesModule } from './user-profiles/user-profiles.module';
+import { SupabaseModule } from './supabase/supabase.module';
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true }), AuthModule], // Make ConfigModule global env can be accessed anywhere
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
+        type: 'postgres',
+        url: configService.get<string>('DATABASE_URL'),
+        autoLoadEntities: true,
+        synchronize: false, // Set to false in production, true for dev if needed but careful with existing schema
+      }),
+      inject: [ConfigService],
+    }),
+    AuthModule,
+    UsersModule,
+    UserProfilesModule,
+    SupabaseModule,
+  ], // Make ConfigModule global env can be accessed anywhere
   providers: [
     AppService,
-    { 
+    {
       provide: 'SUPABASE_CLIENT',
       useFactory: (configService: ConfigService) => {
         const supabaseUrl=configService.get<string>('SUPABASE_URL')||'';
@@ -24,9 +43,8 @@ import { SupabaseService } from './supabase/supabase.service';
       },
       inject: [ConfigService],
     },
-    SupabaseService,
   ],
-  exports: ['SUPABASE_CLIENT',SupabaseService],
+  exports: ['SUPABASE_CLIENT'],
   controllers: [AppController],
 })
 export class AppModule { }
