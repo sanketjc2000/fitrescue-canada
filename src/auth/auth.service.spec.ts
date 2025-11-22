@@ -1,13 +1,15 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ConflictException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SupabaseService } from '../supabase/supabase.service';
 import { UsersService } from '../users/users.service';
 
 describe('AuthService', () => {
   let service: AuthService;
+  let module: TestingModule;
 
   beforeEach(async () => {
-    const module: TestingModule=await Test.createTestingModule({
+    module=await Test.createTestingModule({
       providers: [
         AuthService,
         {
